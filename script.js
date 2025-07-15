@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
+    let recognitionTimeout;
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
@@ -19,6 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Microphone button clicked, starting recognition...');
             recognition.start();
             micButton.classList.add('listening');
+
+            // Automatically stop recognition after 10 seconds
+            clearTimeout(recognitionTimeout);
+            recognitionTimeout = setTimeout(() => {
+                console.log('Recognition timed out after 10 seconds.');
+                recognition.stop();
+            }, 10000);
         });
 
         recognition.onresult = (event) => {
@@ -60,12 +68,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onspeechend = () => {
             console.log('Speech recognition ended.');
+            clearTimeout(recognitionTimeout);
             recognition.stop();
             micButton.classList.remove('listening');
         };
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+            clearTimeout(recognitionTimeout);
             if (event.error === 'not-allowed') {
                 alert('Microphone access was denied. Please allow microphone access in your browser settings.');
             }
