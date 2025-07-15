@@ -71,6 +71,20 @@ main {
     background-color: #45a049;
 }
 
+#clear-button {
+    padding: 0.5rem 1rem;
+    background-color: #757575;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
+
+#clear-button:hover {
+    background-color: #616161;
+}
+
 #mic-button.listening {
     animation: pulse 1.5s infinite;
 }
@@ -92,6 +106,12 @@ h2 {
     border-bottom: 2px solid #d32f2f;
     padding-bottom: 0.5rem;
     margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+}
+
+h2::before {
+    margin-right: 0.5rem;
 }
 
 ul {

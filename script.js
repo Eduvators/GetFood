@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const micButton = document.getElementById('mic-button');
     const itemInput = document.getElementById('item-input');
     const listContainer = document.getElementById('list-container');
+    const clearButton = document.getElementById('clear-button');
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
@@ -15,11 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.maxAlternatives = 1;
 
         micButton.addEventListener('click', () => {
+            console.log('Microphone button clicked, starting recognition...');
             recognition.start();
             micButton.classList.add('listening');
         });
 
         recognition.onresult = (event) => {
+            console.log('Speech recognition result received:', event.results[0][0].transcript);
             let transcript = event.results[0][0].transcript.toLowerCase();
             const allKeywords = [].concat.apply([], Object.values(categories));
             const foundItems = [];
@@ -50,21 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formattedTranscript = event.results[0][0].transcript.charAt(0).toUpperCase() + event.results[0][0].transcript.slice(1);
                 addItemToList(formattedTranscript);
             }
-
-            if (foundItems.length > 0 || event.results[0][0].transcript.trim().length > 0) {
-                saveList();
-            }
+            saveList();
 
             itemInput.value = '';
         };
 
         recognition.onspeechend = () => {
+            console.log('Speech recognition ended.');
             recognition.stop();
             micButton.classList.remove('listening');
         };
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
+            if (event.error === 'not-allowed') {
+                alert('Microphone access was denied. Please allow microphone access in your browser settings.');
+            }
             micButton.classList.remove('listening');
         };
 
@@ -74,18 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const categories = {
-        produce: ['apple', 'banana', 'lettuce', 'spinach', 'avocado', 'broccoli', 'carrots', 'onions', 'garlic', 'peppers', 'tomatoes', 'potatoes', 'salad'],
-        breakfast: ['cereal', 'oatmeal', 'granola', 'eggs', 'pancake mix', 'waffles'],
-        frozen: ['pizza', 'ice cream', 'burrito', 'dumplings', 'gnocchi', 'veggie burger'],
-        snacks: ['chips', 'crackers', 'pretzels', 'nuts', 'popcorn', 'cookies', 'chocolate', 'bars'],
-        dairy: ['milk', 'cheese', 'yogurt', 'butter', 'cream cheese', 'sour cream'],
-        meat: ['chicken', 'beef', 'pork', 'sausage', 'bacon', 'fish', 'salmon', 'ground turkey'],
-        bakery: ['bread', 'bagels', 'croissants', 'muffins', 'cake'],
-        condiments: ['ketchup', 'mustard', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'salsa'],
-        'pantry-staples': ['pasta', 'rice', 'flour', 'sugar', 'oil', 'spices', 'vinegar'],
-        beverages: ['juice', 'soda', 'coffee', 'tea', 'wine', 'water'],
-        household: ['paper towels', 'soap', 'cleaner', 'trash bags', 'sponges'],
-        'canned-goods': ['beans', 'soup', 'tuna', 'canned tomatoes', 'canned corn']
+        'fresh-produce': ['apple', 'banana', 'lettuce', 'spinach', 'avocado', 'broccoli', 'carrots', 'onions', 'garlic', 'peppers', 'tomatoes', 'potatoes', 'salad', 'chicken', 'beef', 'pork', 'sausage', 'bacon', 'fish', 'salmon', 'ground turkey', 'bread', 'bagels', 'croissants', 'muffins', 'cake'],
+        'dairy-refrigerated-items': ['milk', 'cheese', 'yogurt', 'butter', 'cream cheese', 'sour cream', 'eggs'],
+        'pantry-dry-goods': ['cereal', 'oatmeal', 'granola', 'pancake mix', 'waffles', 'chips', 'crackers', 'pretzels', 'nuts', 'popcorn', 'cookies', 'chocolate', 'bars', 'ketchup', 'mustard', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'salsa', 'pasta', 'rice', 'flour', 'sugar', 'oil', 'spices', 'vinegar', 'beans', 'soup', 'tuna', 'canned tomatoes', 'canned corn'],
+        'frozen-foods': ['pizza', 'ice cream', 'burrito', 'dumplings', 'gnocchi', 'veggie burger'],
+        'beverages-miscellaneous': ['juice', 'soda', 'coffee', 'tea', 'wine', 'water', 'paper towels', 'soap', 'cleaner', 'trash bags', 'sponges']
     };
 
     function getCategory(item) {
@@ -95,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return category;
             }
         }
-        return 'produce'; // Default category
+        return 'fresh-produce'; // Default category
     }
 
     function saveList() {
@@ -116,26 +113,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadList() {
         const savedLists = JSON.parse(localStorage.getItem('shoppingList'));
         if (savedLists) {
+            // Clear all lists before loading
+            document.querySelectorAll('#list-container ul').forEach(ul => {
+                ul.innerHTML = '';
+            });
+
             for (const category in savedLists) {
-                const listId = `${category}-list`;
-                const ul = document.getElementById(listId);
-                if (ul) {
-                    // Clear existing items before loading
-                    ul.innerHTML = '';
-                    savedLists[category].forEach(item => {
-                        addItemToList(item.text, item.checked);
-                    });
-                }
+                savedLists[category].forEach(item => {
+                    addItemToList(item.text, item.checked, false); // Don't save while loading
+                });
             }
         }
     }
 
-    function addItemToList(itemName, isChecked = false) {
+    function addItemToList(itemName, isChecked = false, shouldSave = true) {
         if (itemName.trim() === '') return;
 
         const category = getCategory(itemName);
         const listId = `${category}-list`;
-        const list = document.getElementById(listId) || document.getElementById('produce-list');
+        const list = document.getElementById(listId) || document.getElementById('fresh-produce-list');
 
         const listItem = document.createElement('li');
         if (isChecked) {
@@ -161,6 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
             saveList();
         });
 
+        if (shouldSave) {
+            saveList();
+        }
+
         listItem.appendChild(itemText);
         listItem.appendChild(deleteButton);
         list.appendChild(listItem);
@@ -178,6 +178,15 @@ document.addEventListener('DOMContentLoaded', () => {
             addButton.click();
         }
     });
+
+    function clearList() {
+        document.querySelectorAll('#list-container ul').forEach(ul => {
+            ul.innerHTML = '';
+        });
+        localStorage.removeItem('shoppingList');
+    }
+
+    clearButton.addEventListener('click', clearList);
 
     loadList();
 });
