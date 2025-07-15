@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
     let recognitionTimeout;
+    let isListening = false;
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
@@ -16,17 +17,24 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
+        function stopRecognition() {
+            if (!isListening) return;
+            console.log('Stopping recognition and cleaning up.');
+            isListening = false;
+            clearTimeout(recognitionTimeout);
+            recognition.abort(); // Use abort() for a forceful stop
+            micButton.classList.remove('listening');
+        }
+
         micButton.addEventListener('click', () => {
+            if (isListening) return;
             console.log('Microphone button clicked, starting recognition...');
+            isListening = true;
             recognition.start();
             micButton.classList.add('listening');
 
             // Automatically stop recognition after 10 seconds
-            clearTimeout(recognitionTimeout);
-            recognitionTimeout = setTimeout(() => {
-                console.log('Recognition timed out after 10 seconds.');
-                recognition.stop();
-            }, 10000);
+            recognitionTimeout = setTimeout(stopRecognition, 10000);
         });
 
         recognition.onresult = (event) => {
@@ -64,27 +72,20 @@ document.addEventListener('DOMContentLoaded', () => {
             saveList();
 
             itemInput.value = '';
+            stopRecognition(); // Stop after processing result
         };
 
-        recognition.onspeechend = () => {
-            console.log('Speech recognition ended.');
-            // The 'onend' event will handle the cleanup.
-        };
+
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
             if (event.error === 'not-allowed') {
                 alert('Microphone access was denied. Please allow microphone access in your browser settings.');
             }
-            // The 'onend' event will handle the cleanup.
+            stopRecognition(); // Stop on error
         };
 
-        recognition.onend = () => {
-            console.log('Recognition service ended.');
-            clearTimeout(recognitionTimeout);
-            recognition.stop();
-            micButton.classList.remove('listening');
-        };
+
 
     } else {
         micButton.style.display = 'none';
