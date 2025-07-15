@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const categories = {
         'fresh-produce': ['apple', 'banana', 'lettuce', 'spinach', 'avocado', 'broccoli', 'carrots', 'onions', 'garlic', 'peppers', 'tomatoes', 'potatoes', 'salad'],
         'bakery': ['bread', 'bagels', 'croissants', 'muffins', 'cake'],
-        'meat': ['chicken', 'beef', 'pork', 'sausage', 'bacon', 'fish', 'salmon', 'ground turkey'],
+        'meat': ['chicken', 'beef', 'pork', 'sausage', 'bacon', 'fish', 'salmon', 'turkey', 'ground turkey'],
         'dairy-refrigerated-items': ['milk', 'cheese', 'yogurt', 'butter', 'cream cheese', 'sour cream', 'eggs'],
         'pantry-dry-goods': ['cereal', 'oatmeal', 'granola', 'pancake mix', 'waffles', 'chips', 'crackers', 'pretzels', 'nuts', 'popcorn', 'cookies', 'chocolate', 'bars', 'ketchup', 'mustard', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'salsa', 'pasta', 'rice', 'flour', 'sugar', 'oil', 'spices', 'vinegar', 'beans', 'soup', 'tuna', 'canned tomatoes', 'canned corn'],
         'frozen-foods': ['pizza', 'ice cream', 'burrito', 'dumplings', 'gnocchi', 'veggie burger'],
@@ -18,11 +18,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCategory(item) {
         const lowerCaseItem = item.toLowerCase();
         for (const category in categories) {
-            if (categories[category].some(keyword => lowerCaseItem.includes(keyword))) {
+            // Use exact match instead of 'includes' to avoid partial matches
+            if (categories[category].includes(lowerCaseItem)) {
                 return category;
             }
         }
-        return 'fresh-produce'; // Default category
+        return 'other'; // Default to 'Other' for unrecognized items
     }
 
     function saveList() {
@@ -120,12 +121,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    addButton.addEventListener('click', () => {
-        addItemToList(itemInput.value);
+    function addItemsFromInput() {
+        let inputText = itemInput.value.toLowerCase();
+        const allKeywords = [].concat.apply([], Object.values(categories));
+        const foundItems = [];
+
+        // Prioritize multi-word keywords (e.g., 'cream cheese')
+        allKeywords.sort((a, b) => b.split(' ').length - a.split(' ').length);
+
+        allKeywords.forEach(keyword => {
+            const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+            if (regex.test(inputText)) {
+                const formattedItem = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+                foundItems.push(formattedItem);
+                inputText = inputText.replace(regex, ''); // Remove found keyword
+            }
+        });
+
+        // Add any remaining, unrecognized words as individual items
+        const remainingWords = inputText.trim().split(/\s+/).filter(w => w.length > 0);
+        remainingWords.forEach(word => {
+            const formattedWord = word.charAt(0).toUpperCase() + word.slice(1);
+            foundItems.push(formattedWord);
+        });
+
+        if (foundItems.length > 0) {
+            foundItems.forEach(item => addItemToList(item));
+        } else if (itemInput.value.trim().length > 0) {
+            // Fallback for a single item that wasn't a keyword
+            addItemToList(itemInput.value);
+        }
+
         itemInput.value = '';
         itemInput.focus();
         saveList();
-    });
+    }
+
+    addButton.addEventListener('click', addItemsFromInput);
 
     itemInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
