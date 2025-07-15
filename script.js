@@ -68,17 +68,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onspeechend = () => {
             console.log('Speech recognition ended.');
-            clearTimeout(recognitionTimeout);
-            recognition.stop();
-            micButton.classList.remove('listening');
+            // The 'onend' event will handle the cleanup.
         };
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-            clearTimeout(recognitionTimeout);
             if (event.error === 'not-allowed') {
                 alert('Microphone access was denied. Please allow microphone access in your browser settings.');
             }
+            // The 'onend' event will handle the cleanup.
+        };
+
+        recognition.onend = () => {
+            console.log('Recognition service ended.');
+            clearTimeout(recognitionTimeout);
+            recognition.stop();
             micButton.classList.remove('listening');
         };
 
@@ -139,8 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function addItemToList(itemName, isChecked = false, shouldSave = true) {
         if (itemName.trim() === '') return;
 
-        const category = getCategory(itemName);
-        const listId = `${category}-list`;
+        let currentCategory = getCategory(itemName);
+        const listId = `${currentCategory}-list`;
         const list = document.getElementById(listId) || document.getElementById('fresh-produce-list');
 
         const listItem = document.createElement('li');
@@ -151,6 +155,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemText = document.createElement('span');
         itemText.className = 'item-text';
         itemText.textContent = itemName;
+
+        const categorySelector = document.createElement('select');
+        categorySelector.className = 'category-selector';
+        for (const categoryName in categories) {
+            const option = document.createElement('option');
+            option.value = categoryName;
+            option.textContent = categoryName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            if (categoryName === currentCategory) {
+                option.selected = true;
+            }
+            categorySelector.appendChild(option);
+        }
+
+        categorySelector.addEventListener('change', (e) => {
+            const newCategory = e.target.value;
+            const newCategoryList = document.getElementById(`${newCategory}-list`);
+            if (newCategoryList) {
+                newCategoryList.appendChild(listItem);
+                saveList();
+            }
+        });
+
+        categorySelector.addEventListener('click', (e) => e.stopPropagation());
 
         const deleteButton = document.createElement('button');
         deleteButton.className = 'delete-button';
@@ -167,13 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
             saveList();
         });
 
+        listItem.appendChild(itemText);
+        listItem.appendChild(categorySelector);
+        listItem.appendChild(deleteButton);
+        list.appendChild(listItem);
+
         if (shouldSave) {
             saveList();
         }
-
-        listItem.appendChild(itemText);
-        listItem.appendChild(deleteButton);
-        list.appendChild(listItem);
     }
 
     addButton.addEventListener('click', () => {

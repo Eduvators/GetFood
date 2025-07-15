@@ -127,6 +127,7 @@ li {
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    gap: 0.5rem;
 }
 
 li.checked .item-text {
@@ -136,6 +137,14 @@ li.checked .item-text {
 
 .item-text {
     flex-grow: 1;
+}
+
+.category-selector {
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
 }
 
 .delete-button {
