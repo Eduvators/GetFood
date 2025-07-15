@@ -163,3 +163,39 @@ li.checked .item-text {
 li:last-child {
     border-bottom: none;
 }
+
+/* Responsive Design for Mobile */
+@media (max-width: 600px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .input-container {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    #item-input {
+        flex-basis: 100%;
+    }
+
+    #add-button,
+    #mic-button,
+    #clear-button {
+        margin-left: 0;
+        flex-grow: 1;
+    }
+
+    li {
+        flex-wrap: wrap;
+    }
+
+    .item-text {
+        flex-basis: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .category-selector {
+        flex-grow: 1;
+    }
+}
