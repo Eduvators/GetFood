@@ -1,103 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     const addButton = document.getElementById('add-button');
-    const micButton = document.getElementById('mic-button');
     const itemInput = document.getElementById('item-input');
     const listContainer = document.getElementById('list-container');
     const clearButton = document.getElementById('clear-button');
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
-    let recognitionTimeout;
-    let isListening = false;
-
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-
-        function stopRecognition() {
-            if (!isListening) return;
-            console.log('Stopping recognition and cleaning up.');
-            isListening = false;
-            clearTimeout(recognitionTimeout);
-            recognition.abort(); // Use abort() for a forceful stop
-            micButton.classList.remove('listening');
-        }
-
-        micButton.addEventListener('click', () => {
-            if (isListening) return;
-            console.log('Microphone button clicked, starting recognition...');
-            isListening = true;
-            recognition.start();
-            micButton.classList.add('listening');
-
-            // Automatically stop recognition after 10 seconds
-            recognitionTimeout = setTimeout(stopRecognition, 10000);
-        });
-
-        recognition.onresult = (event) => {
-            console.log('Speech recognition result received:', event.results[0][0].transcript);
-            let transcript = event.results[0][0].transcript.toLowerCase();
-            const allKeywords = [].concat.apply([], Object.values(categories));
-            const foundItems = [];
-
-            // Prioritize multi-word items
-            allKeywords.sort((a, b) => b.split(' ').length - a.split(' ').length);
-
-            allKeywords.forEach(keyword => {
-                const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-                if (regex.test(transcript)) {
-                    const formattedItem = keyword.charAt(0).toUpperCase() + keyword.slice(1);
-                    foundItems.push(formattedItem);
-                    transcript = transcript.replace(regex, '');
-                }
-            });
-
-            // Add remaining words as individual items
-            const remainingWords = transcript.trim().split(/\s+/).filter(w => w.length > 0);
-            remainingWords.forEach(word => {
-                const formattedWord = word.charAt(0).toUpperCase() + word.slice(1);
-                foundItems.push(formattedWord);
-            });
-
-            if (foundItems.length > 0) {
-                foundItems.forEach(item => addItemToList(item));
-            } else if (event.results[0][0].transcript.trim().length > 0) {
-                // Fallback for single, unrecognized item
-                const formattedTranscript = event.results[0][0].transcript.charAt(0).toUpperCase() + event.results[0][0].transcript.slice(1);
-                addItemToList(formattedTranscript);
-            }
-            saveList();
-
-            itemInput.value = '';
-            stopRecognition(); // Stop after processing result
-        };
-
-
-
-        recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            if (event.error === 'not-allowed') {
-                alert('Microphone access was denied. Please allow microphone access in your browser settings.');
-            }
-            stopRecognition(); // Stop on error
-        };
-
-
-
-    } else {
-        micButton.style.display = 'none';
-        console.log('Speech recognition not supported in this browser.');
-    }
-
     const categories = {
-        'fresh-produce': ['apple', 'banana', 'lettuce', 'spinach', 'avocado', 'broccoli', 'carrots', 'onions', 'garlic', 'peppers', 'tomatoes', 'potatoes', 'salad', 'chicken', 'beef', 'pork', 'sausage', 'bacon', 'fish', 'salmon', 'ground turkey', 'bread', 'bagels', 'croissants', 'muffins', 'cake'],
+        'fresh-produce': ['apple', 'banana', 'lettuce', 'spinach', 'avocado', 'broccoli', 'carrots', 'onions', 'garlic', 'peppers', 'tomatoes', 'potatoes', 'salad'],
+        'bakery': ['bread', 'bagels', 'croissants', 'muffins', 'cake'],
+        'meat': ['chicken', 'beef', 'pork', 'sausage', 'bacon', 'fish', 'salmon', 'ground turkey'],
         'dairy-refrigerated-items': ['milk', 'cheese', 'yogurt', 'butter', 'cream cheese', 'sour cream', 'eggs'],
         'pantry-dry-goods': ['cereal', 'oatmeal', 'granola', 'pancake mix', 'waffles', 'chips', 'crackers', 'pretzels', 'nuts', 'popcorn', 'cookies', 'chocolate', 'bars', 'ketchup', 'mustard', 'mayo', 'relish', 'hot sauce', 'soy sauce', 'salsa', 'pasta', 'rice', 'flour', 'sugar', 'oil', 'spices', 'vinegar', 'beans', 'soup', 'tuna', 'canned tomatoes', 'canned corn'],
         'frozen-foods': ['pizza', 'ice cream', 'burrito', 'dumplings', 'gnocchi', 'veggie burger'],
-        'beverages-miscellaneous': ['juice', 'soda', 'coffee', 'tea', 'wine', 'water', 'paper towels', 'soap', 'cleaner', 'trash bags', 'sponges']
+        'beverages': ['juice', 'soda', 'coffee', 'tea', 'wine', 'water'],
+        'other': ['paper towels', 'soap', 'cleaner', 'trash bags', 'sponges']
     };
 
     function getCategory(item) {
